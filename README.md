@@ -1,105 +1,400 @@
 # SentinelAuth
+### Intelligent Authentication & Account Protection Platform
 
-**Intelligent Authentication & Account Protection Platform** — an educational portfolio application demonstrating secure login, server-side sessions, MFA, account recovery and explainable account monitoring. It is not certified, independently penetration-tested, or intended to protect real accounts as-is.
+**A full-stack cybersecurity portfolio project focused on secure authentication, session protection, multi-factor authentication, and explainable security monitoring.**
 
-## Architecture and integration
+<p align="center">
 
-- React 18 + TypeScript + Vite builds the client into `frontend/dist`.
-- `python run.py` builds the frontend and starts one Uvicorn/FastAPI process. FastAPI serves the static bundle, client-side routes and `/api/v1/...` endpoints from the same origin. There is no separate frontend server in the integrated workflow.
-- FastAPI uses SQLAlchemy 2, SQLite locally, PostgreSQL-compatible URLs with the pinned psycopg driver, and Alembic as schema source of truth.
-- Vite dev server support remains available for frontend work, but is optional and not used by the integrated application command.
+  **React · TypeScript · FastAPI · SQLAlchemy · SQLite · Alembic**
 
-## Implemented features
+</p>
 
-- Name, email and password registration; normalized unique email; Argon2id password hashing; generic invalid-login message.
-- Cryptographically opaque server-side session cookies; session-token hashes only in the database; HttpOnly/SameSite cookie; configurable Secure attribute; CSRF double-submit on authenticated mutations; 12-hour expiry and 30-minute idle timeout; logout, session listing/revocation, session rotation on login/MFA changes and revocation after password reset.
-- TOTP enrollment with QR + manual fallback; Fernet-encrypted TOTP key; current-password proof for MFA changes; one-use login pre-auth challenges; TOTP replay watermark; eight single-use recovery codes stored as hashes.
-- Hashed, expiring, single-use email-verification/password-reset tokens; SMTP adapter and explicit development-only local links if SMTP is absent in development. Configure an absolute `PUBLIC_BASE_URL` when delivering email.
-- Persisted login/MFA/risk events, deterministic explainable risk scoring, repeated-failure and repeated-reset alerts, role-aware monitoring, user-scoped event data and administrator-only alert transitions with audit entries.
-- Responsive React UI for landing, login, registration, dashboard, account security, MFA, recovery, sessions, alerts, event timeline and admin monitoring.
+---
 
-## Limitations
+## Overview
 
-Process-local login/email/MFA throttles and pre-auth challenge state do not work across multiple workers/instances. No Redis integration, IP reputation, geo anomaly, external intelligence, trained AI, WebAuthn, verified SMTP account or operational alert delivery exists. Database migrations and automated tests are provided, but PostgreSQL runtime is not verified here. The app is not independently security reviewed; additional production engineering and a security assessment are required.
+SentinelAuth is a full-stack web application designed to demonstrate how modern authentication systems can protect user accounts, manage sessions securely, and monitor suspicious authentication activity.
 
-## Prerequisites and one-time setup
+The platform combines a responsive React interface with a FastAPI backend, database-backed session management, multi-factor authentication, account recovery workflows, and explainable security event monitoring.
 
-Requires Python 3.11+ and Node.js 20.19+ with npm. Python 3.12 or 3.13 is recommended and tested in this workspace (Python 3.13.16); Python 3.14 was not available here. SQLAlchemy is pinned to 2.0.50, which includes the upstream Python 3.14 typing compatibility fix (2.0.41+ is required).
+The application is designed to run as a **single integrated web application**. A single startup command builds the frontend and starts the backend, which serves both the user interface and API from the same origin.
 
-1. Copy `.env.example` to `.env` (PowerShell: `Copy-Item .env.example .env`).
-2. Generate secrets:
+> **Project status:** Educational cybersecurity portfolio project. It is not certified, independently penetration-tested, or ready to protect real accounts without additional security engineering and review.
 
-```sh
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-python -c "import secrets; print(secrets.token_urlsafe(48))"
+## Key Features
+
+### Authentication & Account Security
+
+- User registration with normalized email addresses and duplicate-account protection.
+- Argon2id password hashing.
+- Generic invalid-login responses to reduce account-enumeration disclosure.
+- Server-side session management with opaque session tokens.
+- HttpOnly cookies and configurable cookie security settings.
+- Session expiration, idle timeout, logout, revocation, and session rotation.
+- CSRF protection for authenticated state-changing requests.
+
+### Multi-Factor Authentication
+
+- Time-based one-time password (TOTP) authentication.
+- QR-code enrollment and manual setup fallback.
+- Encrypted storage of TOTP secrets.
+- Password confirmation for sensitive MFA changes.
+- Single-use recovery codes stored as hashes.
+- Replay protection for previously accepted TOTP codes.
+
+### Account Recovery
+
+- Email verification with expiring, single-use tokens.
+- Password reset with expiring, single-use tokens.
+- Token hashes stored instead of raw recovery tokens.
+- Optional SMTP integration.
+- Explicit development-only verification and reset links when SMTP is not configured.
+
+### Security Monitoring
+
+- Persisted authentication and security events.
+- Explainable, deterministic risk scoring.
+- Detection rules for repeated authentication failures and password-reset activity.
+- Security alerts and event history.
+- User-scoped security information.
+- Role-based administrative monitoring and audited alert transitions.
+
+### Integrated Web Application
+
+- Responsive React and TypeScript interface.
+- Dashboard, login, registration, account security, MFA, session management, alerts, and activity pages.
+- FastAPI serves the production-built frontend and backend API from the same origin.
+- One-command local startup workflow.
+- SQLAlchemy ORM and Alembic database migrations.
+- Automated backend tests and frontend build checks.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    U[User / Browser]
+    UI[React + TypeScript Frontend]
+    API[FastAPI Application]
+    AUTH[Authentication & Session Services]
+    MFA[MFA & Account Recovery]
+    MON[Security Monitoring & Risk Rules]
+    DB[(SQLAlchemy Database)]
+    MAIL[Optional SMTP Service]
+
+    U --> UI
+    UI --> API
+    API --> AUTH
+    API --> MFA
+    API --> MON
+    AUTH --> DB
+    MFA --> DB
+    MON --> DB
+    MFA -. Optional email delivery .-> MAIL
 ```
 
-Set the first output as `MFA_ENCRYPTION_KEY` and the second as `APP_SECRET` in `.env`. Development defaults are placeholders only. Keep `.env` out of Git.
-3. Install backend requirements once:
+### Request Flow
 
-```sh
-python -m pip install -r backend/requirements.txt
+1. The user interacts with the React frontend.
+2. The frontend sends requests to the FastAPI backend using same-origin API endpoints.
+3. The backend validates requests, authentication state, authorization, and CSRF requirements.
+4. SQLAlchemy accesses the configured database.
+5. Security-relevant events are recorded and evaluated by the monitoring rules.
+6. The API returns the result to the frontend.
+
+The frontend is built into `frontend/dist`. During integrated execution, FastAPI serves the compiled frontend and API routes through one server process.
+
+## Technology Stack
+
+| Layer | Technologies |
+|---|---|
+| Frontend | React 18, TypeScript, Vite |
+| Backend | Python, FastAPI, Uvicorn |
+| Database access | SQLAlchemy 2 |
+| Local database | SQLite |
+| PostgreSQL support | SQLAlchemy-compatible URL and psycopg driver |
+| Database migrations | Alembic |
+| Password security | Argon2id |
+| MFA | TOTP, Fernet encryption |
+| Authentication | Server-side sessions, secure cookie controls, CSRF protection |
+| Testing | Pytest and available frontend checks |
+| Deployment workflow | Integrated startup script; Docker Compose configuration |
+
+## Project Structure
+
+```text
+SentinelAuth/
+├── backend/
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── emailer.py
+│   │   ├── provision_admin.py
+│   │   └── ...
+│   ├── migrations/
+│   ├── tests/
+│   ├── requirements.txt
+│   └── alembic.ini
+├── frontend/
+│   ├── src/
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.ts
+├── docs/
+├── .env.example
+├── .gitignore
+├── run.py
+├── docker-compose.yml
+└── README.md
 ```
 
-4. Install frontend dependencies once:
+*The tree is representative; individual files may vary by project version.*
 
-```sh
-cd frontend && npm ci && cd ..
+## Getting Started
+
+### Prerequisites
+
+- Python 3.12 or 3.13 recommended.
+- Node.js 20.19 or later, with npm.
+- Git.
+- A terminal on Linux, macOS, or Windows.
+
+Python 3.14 compatibility depends on the exact dependency set. Use the project's pinned requirements and verify installation and tests in your environment.
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/manikandan-dm/SentinelAuth.git
+cd SentinelAuth
 ```
 
-Windows PowerShell uses the same commands after installing Python and Node. Linux/Kali can use `python3` and `python -m pip`.
+### 2. Create a Python Virtual Environment
 
-## One-command integrated startup
+Linux / Kali Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Windows PowerShell:
+
+```powershell
+py -3.13 -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+### 3. Install Backend Dependencies
 
 From the project root:
 
-```sh
+```bash
+python -m pip install -r backend/requirements.txt
+```
+
+### 4. Install Frontend Dependencies
+
+```bash
+cd frontend
+npm ci
+cd ..
+```
+
+### 5. Configure Environment Variables
+
+Create a local environment file:
+
+```bash
+cp .env.example .env
+```
+
+On Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Generate an MFA encryption key:
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Generate an application secret:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Set the generated values in `.env`:
+
+```dotenv
+ENVIRONMENT=development
+AUTO_MIGRATE=true
+DATABASE_URL=sqlite:///./sentinelauth.db
+APP_SECRET=replace-with-your-generated-secret
+MFA_ENCRYPTION_KEY=replace-with-your-generated-fernet-key
+SECURE_COOKIES=false
+```
+
+Replace both placeholder values with your generated secrets. Keep `.env` private and never commit it to Git.
+
+For local development, `SECURE_COOKIES=false` permits HTTP-based local testing. Production must use HTTPS and appropriate secure-cookie settings.
+
+### 6. Start the Integrated Application
+
+From the repository root:
+
+```bash
 python run.py
 ```
 
-**Open:** http://127.0.0.1:8000  
-**Health:** http://127.0.0.1:8000/api/v1/health  
-**Development API docs:** http://127.0.0.1:8000/docs
+The startup script builds the frontend, optionally applies forward-only database migrations according to the configuration, and starts the integrated FastAPI application.
 
-`run.py` checks dependencies, builds the frontend, optionally applies forward-only migrations when `AUTO_MIGRATE=true`, and starts FastAPI serving both UI and API. It does not silently install packages, create secrets, overwrite `.env`, or reset a database. If frontend packages are missing, install them once with `cd frontend && npm ci`. If `AUTO_MIGRATE=false`, apply schema first using `cd backend && alembic upgrade head`.
+**Local application:** http://127.0.0.1:8000
 
-The sample `.env.example` sets `AUTO_MIGRATE=true` for convenient local setup. Set it to `false` in production and run migrations through a controlled deployment step.
+**Health endpoint:** http://127.0.0.1:8000/api/v1/health
 
-Optional development mode: `cd frontend && npm run dev` uses the Vite proxy; this is not needed for the integrated `python run.py` workflow.
+**Development API documentation:** http://127.0.0.1:8000/docs
 
-## Database, SMTP and administrator setup
+The health endpoint and documentation availability depend on the running application's configuration.
 
-Default DB URL: `sqlite:///./sentinelauth.db`, relative to the backend working directory. Override `DATABASE_URL` with a SQLAlchemy URL, e.g. `postgresql+psycopg://...`. `psycopg[binary]` is included; PostgreSQL service connectivity is not verified here. Run `cd backend && alembic upgrade head`, inspect `alembic current`, check drift with `alembic check`, and back up databases before changes. SQLite DB files are gitignored and never mounted as static files.
+### Optional: Development Mode
 
-Optional SMTP variables: `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_STARTTLS`, and absolute `PUBLIC_BASE_URL` (e.g. `https://auth.example.test`). Without SMTP in development, the UI shows local one-time verification/reset links. In production no development token links are returned. SMTP delivery was not verified because no credentials were supplied.
+For frontend-only development, the Vite development server can be used separately:
 
-No HTTP admin-promotion endpoint exists. After creating and verifying an account, a trusted operator can promote it offline:
+```bash
+cd frontend
+npm run dev
+```
 
-```sh
+This is optional and is not required for the integrated `python run.py` workflow.
+
+## Database & Migrations
+
+The default local database uses SQLite:
+
+```dotenv
+DATABASE_URL=sqlite:///./sentinelauth.db
+```
+
+A PostgreSQL-compatible SQLAlchemy URL can be configured when a suitable database server is available:
+
+```dotenv
+DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/DATABASE
+```
+
+Before changing schemas or deploying:
+
+- Back up existing data.
+- Review the Alembic migration history.
+- Apply migrations through a controlled process.
+- Verify the resulting schema.
+- Do not delete or recreate a database to resolve migration errors.
+
+PostgreSQL runtime connectivity must be verified separately in the target environment.
+
+## Security Design
+
+SentinelAuth demonstrates several security engineering practices:
+
+- Password hashing using Argon2id.
+- Opaque session tokens with hashes stored server-side.
+- HttpOnly cookie-based sessions.
+- Session expiry and revocation.
+- CSRF protection for authenticated mutations.
+- Encrypted TOTP secret storage.
+- Hashed, expiring, single-use recovery tokens.
+- One-use account recovery codes.
+- Authorization checks for administrative functionality.
+- Persisted security events and explainable risk rules.
+- Environment-based configuration for application secrets.
+
+These controls are implementation features, not proof that the application is free of vulnerabilities.
+
+## Testing & Quality Checks
+
+Run the following checks from the project root where applicable.
+
+### Backend Tests
+
+```bash
 cd backend
-python -m app.provision_admin verified-user@example.com --confirm
+pytest -q
+python -m pip check
+alembic check
+cd ..
 ```
 
-This CLI revokes existing sessions. Protect host/database access.
+### Frontend Build
 
-## Tests and checks
-
-```sh
-cd backend && pytest -q
-cd backend && alembic check
-cd backend && python -m pip check
-cd backend && pip-audit -r requirements.txt  # install pip-audit first if needed
-cd frontend && npm test
-cd frontend && npm run build
-cd frontend && npm audit --audit-level=high
+```bash
+cd frontend
+npm run build
+npm audit --audit-level=high
 ```
 
-Automated integration tests use isolated SQLite databases; clean migration behavior is covered. No secret-scanning CLI was available in the workspace; manual pattern checks found no private-key blocks, and `.env` is not present. Do not interpret that as comprehensive secret scanning.
+Run `npm test` if a test script is configured in `frontend/package.json`.
 
-## API and deployment
+For a more complete review, test registration, login, logout, session expiration, CSRF validation, MFA enrollment, account recovery, authorization boundaries, and migration behavior.
 
-OpenAPI docs are at `/docs` in development. Endpoints include `/api/v1/auth/register`, `/login`, `/me`, `/logout`, `/sessions`, `/mfa/*`, `/email-verification/*`, `/password-reset/*`, `/profile` and `/api/v1/security/*`. Mutations with a cookie session require the CSRF cookie mirrored in `X-CSRF-Token`; the shared client handles this.
+**Testing status:** Publish actual test results only after running the checks. A successful frontend build alone does not establish that every authentication or security workflow is correct.
 
-`docker compose up --build` builds and serves a local frontend/API stack on localhost, runs Alembic migrations, and persists SQLite data in a named volume. Docker was unavailable in the validation environment, so this workflow is documented but not verified by a container build.
+## Limitations & Future Improvements
 
-Outside development, startup rejects the sample APP_SECRET, requires a valid MFA_ENCRYPTION_KEY, SECURE_COOKIES=true, and HTTPS-only CORS origins. Production still requires HTTPS/TLS termination, managed unique secrets and key backups, PostgreSQL, exact allowed origins, shared rate limits/challenge storage, controlled migrations/backups, verified SMTP, private DB network, operational monitoring and independent security review. No certification or production-security claim is made.
+The current design has known limitations:
+
+- Rate limits and pre-authentication challenge state are process-local.
+- Shared rate limiting and challenge storage are not implemented with Redis.
+- No IP reputation or geolocation-based anomaly detection.
+- Risk scoring is deterministic and rule-based, not a trained AI model.
+- WebAuthn/passkeys are not implemented.
+- SMTP delivery has not been verified without valid SMTP credentials.
+- PostgreSQL runtime behavior requires separate verification.
+- The Docker Compose workflow requires validation in a Docker-capable environment.
+- The project has not undergone an independent penetration test or security audit.
+
+### Potential Future Enhancements
+
+- Redis-backed distributed rate limiting and challenge storage.
+- WebAuthn/passkey authentication.
+- Improved security event correlation and configurable alert rules.
+- Verified SMTP integration and operational alert delivery.
+- PostgreSQL integration testing.
+- Automated dependency and secret scanning.
+- Containerized deployment validation.
+- Independent security review and penetration testing.
+
+## Deployment Considerations
+
+Before any production deployment:
+
+- Use HTTPS with correctly configured TLS termination.
+- Set `SECURE_COOKIES=true`.
+- Use unique, strong, managed secrets and plan encryption-key backups.
+- Configure exact trusted origins and email delivery settings.
+- Use an appropriately secured database and tested migration procedures.
+- Implement shared rate limiting and challenge storage for multiple workers.
+- Protect database backups and operational logs.
+- Monitor application health and security events.
+- Perform an independent security assessment.
+
+The included local configuration is intended for development, not production deployment.
+
+## Documentation
+
+Additional documentation is available in the `docs/` directory, including architecture, database schema, deployment, account security, risk scoring, security monitoring, and validation topics where provided.
+
+## Disclaimer
+
+SentinelAuth is an educational portfolio project intended to demonstrate full-stack development and security engineering concepts. It is provided without security certification or a guarantee of suitability for real-world account protection. Review the implementation, verify the configuration, test the deployed environment, and obtain independent security review before using it with real users.
+
+## Author
+
+**Manikandan D**
+
+GitHub: [@manikandan-dm](https://github.com/manikandan-dm)
+
+Project: [SentinelAuth](https://github.com/manikandan-dm/SentinelAuth)
+
+---
+
+*Built as a cybersecurity learning project exploring secure authentication, account protection, and application security monitoring.*
